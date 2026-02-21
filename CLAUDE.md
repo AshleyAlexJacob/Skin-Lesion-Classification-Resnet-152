@@ -32,6 +32,11 @@ streamlit run app/streamlit.py
 uvicorn app.main:app --reload
 ```
 
+**Organize raw HAM10000 (merge part_1/part_2 + by-class):**
+```bash
+python -m src.pipelines.data_preprocessing
+```
+
 ---
 
 ## Code Style — PEP 8

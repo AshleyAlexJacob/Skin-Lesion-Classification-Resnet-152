@@ -1,0 +1,26 @@
+model:
+  name: "resnet152"
+  pretrained: true
+  freeze_layers: true
+  unfreeze_blocks: 1  # How many of the last layers to unfreeze (1 to 4)
+
+training:
+  batch_size: 32
+  epochs: 50
+  learning_rate: 0.001
+  device: "auto" # "cuda", "cpu", or "auto"
+  subset_fraction: 1  # Set to < 1.0 to train on a small subset for fast CPU testing
+  use_class_weights: true
+  class_counts:
+    akiec: 327
+    bcc: 514
+    bkl: 1099
+    df: 115
+    mel: 1113
+    nv: 6705
+    vasc: 142
+
+data:
+  train_dir: "data/processed/train"
+  val_dir: "data/processed/val"
+  image_size: 224

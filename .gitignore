@@ -212,3 +212,6 @@ example.txt
 # datasets
 data/raw/archive/
 data/processed/
+
+# model artifacts
+artifacts/models/

@@ -15,6 +15,7 @@ def get_data_loaders(
     img_size: tuple[int, int] = (224, 224),
     num_workers: int = 4,
     seed: int = 42,
+    subset_fraction: float = 1.0,
 ) -> tuple[DataLoader, DataLoader, list[str]]:
     """Create PyTorch DataLoaders for training and testing from an image directory.
 
@@ -27,6 +28,7 @@ def get_data_loaders(
         img_size: Target size for resizing images (height, width).
         num_workers: Number of subprocesses to use for data loading.
         seed: Random seed for reproducible 70/30 dataset splitting.
+        subset_fraction: Fraction of dataset to use (0.0 to 1.0) for fast testing.
 
     Returns:
         A tuple containing:
@@ -69,6 +71,14 @@ def get_data_loaders(
     train_dataset, test_dataset = random_split(
         full_dataset, [train_size, test_size], generator=generator
     )
+
+    if subset_fraction < 1.0:
+        train_subset_size = max(1, int(train_size * subset_fraction))
+        test_subset_size = max(1, int(test_size * subset_fraction))
+
+        # Take the first N elements from the randomized split
+        train_dataset = torch.utils.data.Subset(train_dataset, range(train_subset_size))
+        test_dataset = torch.utils.data.Subset(test_dataset, range(test_subset_size))
 
     # Create DataLoaders
     dataloader_train = DataLoader(

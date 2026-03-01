@@ -23,4 +23,6 @@ training:
 data:
   train_dir: "data/processed/train"
   val_dir: "data/processed/val"
+  # Uncomment to use test dataset instead of validation
+  # test_dir: "data/processed/test"
   image_size: 224

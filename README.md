@@ -39,3 +39,11 @@ To train the model in the production environment, run:
 python -m src.pipelines.model_training --config config.yaml
 ```
 
+**3. Model Evaluation**
+Evaluate the trained ResNet-152 model. The script automatically loads the model weights and evaluates it on the test dataset (or falls back to validation if testing is not available).
+
+To evaluate the model, run:
+```bash
+python -m src.pipelines.model_evaluation --config config.dev.yaml --model artifacts/models/best_model.pth
+```
+Results will be saved as a CSV file in the `artifacts/results/testing/` directory.

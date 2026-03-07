@@ -26,3 +26,6 @@ data:
   # Uncomment to use test dataset instead of validation
   # test_dir: "data/processed/test"
   image_size: 224
+
+mlflow:
+  experiment_name: "skin_lesion_classification"

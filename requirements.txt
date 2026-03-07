@@ -7,3 +7,7 @@ ruff==0.15.2
 uvicorn==0.41.0
 PyYAML==6.0.3
 tqdm==4.67.3
+mlflow==3.10.0
+scikit-learn==1.8.0
+matplotlib
+python-dotenv==1.2.1

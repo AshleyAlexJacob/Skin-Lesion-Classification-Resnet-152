@@ -27,6 +27,13 @@ Organize and preprocess the raw HAM10000 dataset into the structured format requ
 python -m src.pipelines.data_preprocessing
 ```
 
+**1.5. Data Splitting**
+Split the dataset into train, validation and test splits (63/27/10 ratio).
+```bash
+python -m src.pipelines.split_pipeline
+```
+
+
 **2. Model Training**
 Train the ResNet-152 model. The script automatically handles loading pretrained weights, applying class-weighted Cross-Entropy loss based on dataset imbalance, and batch-level minority augmentations depending on the `config.yaml` definitions.
 

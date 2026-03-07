@@ -33,12 +33,15 @@ class ModelTrainer:
         self.learning_rate = self.config["training"]["learning_rate"]
 
         # Data loaders
-        data_dir = self.config.get("data", {}).get("data_dir", "data/processed")
+        data_dir = pathlib.Path(self.config.get("data", {}).get("data_dir", "data/processed"))
+        train_dir = data_dir / "train"
+        val_dir = data_dir / "val"
         batch_size = self.config["training"]["batch_size"]
         subset_fraction = self.config.get("training", {}).get("subset_fraction", 1.0)
 
         self.train_loader, self.val_loader, self.class_names = get_data_loaders(
-            data_dir=data_dir,
+            train_dir=train_dir,
+            val_dir=val_dir,
             batch_size=batch_size,
             subset_fraction=subset_fraction,
         )

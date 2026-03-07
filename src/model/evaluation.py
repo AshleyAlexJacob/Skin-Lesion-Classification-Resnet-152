@@ -121,25 +121,9 @@ class ModelEvaluator:
             )
             return dataloader
             
-        print("Test/val directories not populated. Falling back to src.data.loader.get_data_loaders using base data_dir.")
-        from src.data.loader import get_data_loaders
-        data_dir = data_cfg.get("data_dir", "data/processed")
-        num_workers = self.config.get("training", {}).get("num_workers", 4)
-        subset_fraction = self.config.get("training", {}).get("subset_fraction", 1.0)
-        
-        _, test_loader, class_names = get_data_loaders(
-            data_dir=data_dir,
-            batch_size=self.batch_size,
-            img_size=self.img_size,
-            num_workers=num_workers,
-            subset_fraction=subset_fraction,
+        raise ValueError(
+            f"Neither testing directory ({test_dir}) nor validation directory ({val_dir}) exist or are populated."
         )
-        
-        if not self.class_names or len(self.class_names) != len(class_names):
-            self.class_names = class_names
-            self.num_classes = len(self.class_names)
-            
-        return test_loader
 
     def load_model(self, model_path: str | pathlib.Path) -> SkinLesionResNet:
         """Load the pre-trained ResNet model from a saved state dictionary.

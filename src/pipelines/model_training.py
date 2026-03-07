@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 import argparse
+import datetime
+import os
 import pathlib
 
+import mlflow
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import yaml
+from dotenv import load_dotenv
 from tqdm import tqdm
 
 from src.data.loader import get_data_loaders
@@ -149,63 +153,104 @@ class ModelTrainer:
 
     def train(self) -> None:
         """Execute the training loop."""
+        load_dotenv()
+        
+        mlflow_cfg = self.config.get("mlflow", {})
+        tracking_uri = mlflow_cfg.get("tracking_uri")
+        if tracking_uri:
+            mlflow.set_tracking_uri(tracking_uri)
+            
+        exp_name = mlflow_cfg.get("experiment_name", "skin_lesion_classification")
+        now = datetime.datetime.now()
+        exp_name = f"{exp_name}_{now.strftime('%d_%m_%Y')}"
+        
+        mlflow.set_experiment(exp_name)
+        
         print(f"Starting training for {self.epochs} epochs...")
 
-        for epoch in range(self.epochs):
-            self.model.train()
-            running_loss = 0.0
-            correct = 0
-            total = 0
+        with mlflow.start_run():
+            # Log configuration parameters
+            mlflow.log_params({
+                f"training_{k}": v for k, v in self.config.get("training", {}).items() 
+                if not isinstance(v, (dict, list))
+            })
+            mlflow.log_params({
+                f"model_{k}": v for k, v in self.config.get("model", {}).items()
+            })
 
-            train_pbar = tqdm(
-                self.train_loader,
-                desc=f"Epoch [{epoch + 1}/{self.epochs}] Training",
-                leave=False,
-            )
-            for inputs, labels in train_pbar:
-                inputs = inputs.to(self.device)
-                labels = labels.to(self.device)
+            for epoch in range(self.epochs):
+                self.model.train()
+                running_loss = 0.0
+                correct = 0
+                total = 0
 
-                # Apply batched augmentation for minority classes
-                inputs = self.apply_minority_augmentation(inputs, labels)
-
-                self.optimizer.zero_grad()
-
-                outputs = self.model(inputs)
-                loss = self.criterion(outputs, labels)
-
-                loss.backward()
-                self.optimizer.step()
-
-                running_loss += loss.item()
-                _, predicted = outputs.max(1)
-                total += labels.size(0)
-                correct += predicted.eq(labels).sum().item()
-
-                # Update progress bar
-                train_pbar.set_postfix({"loss": f"{loss.item():.4f}"})
-
-            train_loss = running_loss / len(self.train_loader)
-            train_acc = 100.0 * correct / total
-
-            # Validation step
-            val_loss, val_acc = self._validate()
-
-            print(
-                f"Epoch [{epoch + 1}/{self.epochs}] "
-                f"Train Loss: {train_loss:.4f} Acc: {train_acc:.2f}% | "
-                f"Val Loss: {val_loss:.4f} Acc: {val_acc:.2f}%"
-            )
-
-            if val_acc > self.best_val_acc:
-                print(
-                    f"Validation accuracy improved from {self.best_val_acc:.2f}% "
-                    f"to {val_acc:.2f}%. Saving model..."
+                train_pbar = tqdm(
+                    self.train_loader,
+                    desc=f"Epoch [{epoch + 1}/{self.epochs}] Training",
+                    leave=False,
                 )
-                self.best_val_acc = val_acc
-                self.save_model()
+                for inputs, labels in train_pbar:
+                    inputs = inputs.to(self.device)
+                    labels = labels.to(self.device)
 
-        print("Training completed.")
+                    # Apply batched augmentation for minority classes
+                    inputs = self.apply_minority_augmentation(inputs, labels)
+
+                    self.optimizer.zero_grad()
+
+                    outputs = self.model(inputs)
+                    loss = self.criterion(outputs, labels)
+
+                    loss.backward()
+                    self.optimizer.step()
+
+                    running_loss += loss.item()
+                    _, predicted = outputs.max(1)
+                    total += labels.size(0)
+                    correct += predicted.eq(labels).sum().item()
+
+                    # Update progress bar
+                    train_pbar.set_postfix({"loss": f"{loss.item():.4f}"})
+
+                train_loss = running_loss / len(self.train_loader)
+                train_acc = 100.0 * correct / total
+
+                # Validation step
+                val_loss, val_acc = self._validate()
+
+                print(
+                    f"Epoch [{epoch + 1}/{self.epochs}] "
+                    f"Train Loss: {train_loss:.4f} Acc: {train_acc:.2f}% | "
+                    f"Val Loss: {val_loss:.4f} Acc: {val_acc:.2f}%"
+                )
+
+                # Log metrics to MLflow
+                mlflow.log_metrics({
+                    "train_loss": train_loss,
+                    "train_acc": train_acc,
+                    "val_loss": val_loss,
+                    "val_acc": val_acc
+                }, step=epoch)
+
+                if val_acc > self.best_val_acc:
+                    print(
+                        f"Validation accuracy improved from {self.best_val_acc:.2f}% "
+                        f"to {val_acc:.2f}%. Saving model..."
+                    )
+                    self.best_val_acc = val_acc
+                    self.save_model()
+
+            print("Training completed.")
+            
+            # Log best model as artifact
+            best_model_path = self.artifacts_dir / "best_model.pth"
+            if best_model_path.exists():
+                mlflow.log_artifact(str(best_model_path))
+                
+                # Also log the full model to MLflow server
+                self.model.to("cpu")
+                mlflow.pytorch.log_model(self.model, "model")
+                self.model.to(self.device)
 
     def _validate(self) -> tuple[float, float]:
         """Run evaluation on the validation set.

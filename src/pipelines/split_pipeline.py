@@ -18,7 +18,7 @@ def run() -> None:
     logger.info("Starting data split pipeline.")
 
     # The dataset to be split according to user specification
-    input_dir_path = Path("/home/moeenuddin/Desktop/Deep_learning/Skin_Lesion/ResNet-Based-Skin-Lesion-Classification-System/dataset/processed")
+    input_dir_path = Path("data/raw/archive/HAM10000_images/")
     output_dir_path = Path("data/processed")
     
     if input_dir_path.exists():

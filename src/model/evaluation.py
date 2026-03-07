@@ -4,10 +4,16 @@ from __future__ import annotations
 
 import csv
 import datetime
+import os
 import pathlib
 
+import matplotlib.pyplot as plt
+import mlflow
 import torch
+import torch.nn.functional as F
 import yaml
+from dotenv import load_dotenv
+from sklearn.metrics import roc_auc_score, roc_curve, auc
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 from tqdm import tqdm
@@ -160,32 +166,115 @@ class ModelEvaluator:
                 - y_true: List of ground truth class indices.
                 - y_pred: List of predicted class indices.
         """
+        load_dotenv()
+        
+        mlflow_cfg = self.config.get("mlflow", {})
+        exp_name = mlflow_cfg.get("experiment_name", "skin_lesion_classification")
+        now = datetime.datetime.now()
+        exp_name = f"{exp_name}_{now.strftime('%d_%m_%Y')}"
+        
+        mlflow.set_experiment(exp_name)
+
         correct = 0
         total = 0
         y_true = []
         y_pred = []
+        y_probs = []
 
         print("Starting evaluation...")
-        with torch.no_grad():
-            eval_pbar = tqdm(self.dataset_loader, desc="Evaluating", leave=True)
-            for inputs, labels in eval_pbar:
-                inputs = inputs.to(self.device)
-                labels = labels.to(self.device)
+        
+        with mlflow.start_run():
+            with torch.no_grad():
+                eval_pbar = tqdm(self.dataset_loader, desc="Evaluating", leave=True)
+                for inputs, labels in eval_pbar:
+                    inputs = inputs.to(self.device)
+                    labels = labels.to(self.device)
 
-                outputs = self.model(inputs)
-                _, predicted = outputs.max(1)
+                    outputs = self.model(inputs)
+                    probs = F.softmax(outputs, dim=1)
+                    _, predicted = outputs.max(1)
 
-                total += labels.size(0)
-                correct += predicted.eq(labels).sum().item()
+                    total += labels.size(0)
+                    correct += predicted.eq(labels).sum().item()
 
-                y_true.extend(labels.cpu().tolist())
-                y_pred.extend(predicted.cpu().tolist())
+                    y_true.extend(labels.cpu().tolist())
+                    y_pred.extend(predicted.cpu().tolist())
+                    y_probs.extend(probs.cpu().tolist())
 
-        accuracy = 100.0 * correct / total if total > 0 else 0.0
-        metrics = {"accuracy": accuracy}
+            accuracy = 100.0 * correct / total if total > 0 else 0.0
+            metrics = {"test_accuracy": accuracy}
+            
+            # Calculate AUC if applicable (e.g. at least 2 classes)
+            if self.num_classes >= 2:
+                try:
+                    # 'ovo' (One-vs-One) or 'ovr' (One-vs-Rest)
+                    if self.num_classes == 2:
+                        y_probs_1d = [p[1] for p in y_probs]
+                        auc_val = roc_auc_score(y_true, y_probs_1d)
+                    else:
+                        auc_val = roc_auc_score(y_true, y_probs, multi_class='ovr')
+                    metrics["test_auc"] = auc_val
+                    
+                    # Generate and save AUC curve
+                    self._plot_and_log_auc(y_true, y_probs)
+                except Exception as e:
+                    print(f"Failed to calculate or plot AUC: {e}")
 
-        print(f"Evaluation completed. Accuracy: {accuracy:.2f}%")
+            print(f"Evaluation completed. Accuracy: {accuracy:.2f}%")
+            
+            # Log metrics to MLflow
+            mlflow.log_metrics(metrics)
+
         return metrics, y_true, y_pred
+
+    def _plot_and_log_auc(self, y_true: list[int], y_probs: list[list[float]]) -> None:
+        """Plot the ROC curve, calculate AUC per class, and log to MLflow.
+        
+        Args:
+           y_true: True class indices
+           y_probs: Predicted probabilities for each class
+        """
+        plt.figure(figsize=(10, 8))
+        
+        # Binarize labels for multi-class ROC calculation
+        from sklearn.preprocessing import label_binarize
+        classes = list(range(self.num_classes))
+        y_true_bin = label_binarize(y_true, classes=classes)
+        
+        if self.num_classes == 2:
+            y_probs_1d = [p[1] for p in y_probs]
+            fpr, tpr, _ = roc_curve(y_true, y_probs_1d)
+            roc_auc = auc(fpr, tpr)
+            plt.plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC curve (area = {roc_auc:.2f})')
+        else:
+            import numpy as np
+            y_probs_np = np.array(y_probs)
+            for i in range(self.num_classes):
+                class_name = self.class_names[i] if self.class_names else f"Class {i}"
+                fpr, tpr, _ = roc_curve(y_true_bin[:, i], y_probs_np[:, i])
+                roc_auc = auc(fpr, tpr)
+                plt.plot(fpr, tpr, lw=2, label=f'ROC curve of class {class_name} (area = {roc_auc:.2f})')
+                
+        plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+        plt.xlim([0.0, 1.0])
+        plt.ylim([0.0, 1.05])
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+        plt.title('Receiver Operating Characteristic')
+        plt.legend(loc="lower right")
+        
+        # Save plot
+        plot_dir = pathlib.Path("artifacts/plots")
+        plot_dir.mkdir(parents=True, exist_ok=True)
+        today = datetime.datetime.now().strftime("%d_%m_%Y")
+        plot_path = plot_dir / f"roc_curve_{today}.png"
+        
+        plt.savefig(plot_path)
+        plt.close()
+        
+        # Log to MLflow
+        mlflow.log_artifact(str(plot_path))
+        print(f"AUC curve saved and logged to MLflow from: {plot_path}")
 
     def save_results(
         self, metrics: dict[str, float], y_true: list[int], y_pred: list[int]

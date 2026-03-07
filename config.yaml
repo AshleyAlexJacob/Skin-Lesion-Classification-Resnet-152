@@ -8,7 +8,7 @@ training:
   batch_size: 32
   epochs: 50
   learning_rate: 0.001
-  device: "auto" # "cuda", "cpu", or "auto"
+  device: "cuda" # "cuda", "cpu", or "auto"
   subset_fraction: 1  # Set to < 1.0 to train on a small subset for fast CPU testing
   use_class_weights: true
   class_counts:
@@ -26,3 +26,6 @@ data:
   # Uncomment to use test dataset instead of validation
   # test_dir: "data/processed/test"
   image_size: 224
+
+mlflow:
+  experiment_name: "skin_lesion_classification_kaggle_kernel"

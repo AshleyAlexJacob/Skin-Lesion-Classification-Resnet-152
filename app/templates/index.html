@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Diagnostics Dashboard</title>
+    <title>AI Skin Lesion Diagnostics</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- React & ReactDOM -->
@@ -24,7 +24,7 @@
                             bg: '#1a1b1e',
                             card: '#24252b',
                             cardHover: '#2a2b32',
-                            accent: '#06b6d4',  // Cyan/Teal (Clinical Cool)
+                            accent: '#06b6d4',
                             accentDark: '#0891b2',
                             textPrimary: '#f8fafc',
                             textSecondary: '#94a3b8',
@@ -69,7 +69,6 @@
             overflow-x: hidden;
         }
 
-        /* Scrollbars */
         ::-webkit-scrollbar {
             width: 6px;
             height: 6px;
@@ -108,7 +107,6 @@
             pointer-events: none;
         }
 
-        /* Staggered animation classes */
         .stagger-1 {
             animation: slideUpFade 0.5s ease-out 0.1s both;
         }
@@ -137,7 +135,6 @@
             }
         }
 
-        /* Skeleton Pulse */
         .skeleton {
             background: linear-gradient(90deg, #2a2b32 25%, #33343b 50%, #2a2b32 75%);
             background-size: 200% 100%;
@@ -154,7 +151,6 @@
             }
         }
 
-        /* Grid background pattern */
         .grid-pattern {
             background-image:
                 linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
@@ -169,28 +165,22 @@
 
     <script type="text/babel">
         const CLASS_META = {
-            'mel': { name: 'Melanoma', severity: 'High', color: 'text-red-400', statColor: 'bg-red-400', desc: 'A dangerous type of skin cancer that can spread rapidly. Immediate clinical consultation required.' },
-            'nv': { name: 'Melanocytic Nevus', severity: 'Low', color: 'text-dashboard-green', statColor: 'bg-dashboard-green', desc: 'A common, harmless mole. Usually no treatment is necessary.' },
-            'bcc': { name: 'Basal Cell Carcinoma', severity: 'Medium', color: 'text-amber-400', statColor: 'bg-amber-400', desc: 'A common, slow-growing skin cancer. Rarely spreads, but should be treated.' },
-            'akiec': { name: 'Actinic Keratosis', severity: 'Medium', color: 'text-amber-400', statColor: 'bg-amber-400', desc: 'A precancerous scaly patch caused by sun damage. Can progress to cancer.' },
-            'bkl': { name: 'Benign Keratosis', severity: 'Low', color: 'text-dashboard-green', statColor: 'bg-dashboard-green', desc: 'A harmless, non-cancerous skin growth prevalent with aging.' },
-            'df': { name: 'Dermatofibroma', severity: 'Low', color: 'text-dashboard-green', statColor: 'bg-dashboard-green', desc: 'A common benign fibrous nodule often found on lower legs.' },
-            'vasc': { name: 'Vascular Lesion', severity: 'Low', color: 'text-dashboard-green', statColor: 'bg-dashboard-green', desc: 'A harmless overgrowth of blood vessels (e.g., hemangioma).' },
+            'mel': { name: 'Melanoma', classification: 'Cancer', classTag: 'text-red-400 border-red-400/50 bg-red-400/10', severity: 'High', color: 'text-red-400', statColor: 'bg-red-400', desc: 'A dangerous type of skin cancer that can spread rapidly. Immediate clinical consultation required.' },
+            'nv': { name: 'Melanocytic Nevus', classification: 'Non-Cancer', classTag: 'text-dashboard-green border-dashboard-green/50 bg-dashboard-green/10', severity: 'Low', color: 'text-dashboard-green', statColor: 'bg-dashboard-green', desc: 'A common, harmless mole. Usually no treatment is necessary.' },
+            'bcc': { name: 'Basal Cell Carcinoma', classification: 'Cancer', classTag: 'text-red-400 border-red-400/50 bg-red-400/10', severity: 'Medium', color: 'text-amber-400', statColor: 'bg-amber-400', desc: 'A common, slow-growing skin cancer. Rarely spreads, but should be treated.' },
+            'akiec': { name: 'Actinic Keratosis', classification: 'Cancer', classTag: 'text-red-400 border-red-400/50 bg-red-400/10', severity: 'Medium', color: 'text-amber-400', statColor: 'bg-amber-400', desc: 'A precancerous scaly patch caused by sun damage. Can progress to cancer.' },
+            'bkl': { name: 'Benign Keratosis', classification: 'Non-Cancer', classTag: 'text-dashboard-green border-dashboard-green/50 bg-dashboard-green/10', severity: 'Low', color: 'text-dashboard-green', statColor: 'bg-dashboard-green', desc: 'A harmless, non-cancerous skin growth prevalent with aging.' },
+            'df': { name: 'Dermatofibroma', classification: 'Non-Cancer', classTag: 'text-dashboard-green border-dashboard-green/50 bg-dashboard-green/10', severity: 'Low', color: 'text-dashboard-green', statColor: 'bg-dashboard-green', desc: 'A common benign fibrous nodule often found on lower legs.' },
+            'vasc': { name: 'Vascular Lesion', classification: 'Non-Cancer', classTag: 'text-dashboard-green border-dashboard-green/50 bg-dashboard-green/10', severity: 'Low', color: 'text-dashboard-green', statColor: 'bg-dashboard-green', desc: 'A harmless overgrowth of blood vessels (e.g., hemangioma).' },
         };
 
-        const STATUS = {
-            IDLE: 'IDLE',
-            ANALYZING: 'ANALYZING',
-            SUCCESS: 'SUCCESS',
-            ERROR: 'ERROR'
-        };
+        const STATUS = { IDLE: 'IDLE', ANALYZING: 'ANALYZING', SUCCESS: 'SUCCESS', ERROR: 'ERROR' };
 
         function CircularProgress({ percent, bg, className }) {
             const radius = 45;
             const circumference = 2 * Math.PI * radius;
             const dashArray = `${circumference * 0.5} ${circumference * 0.5}`;
             const finalOffset = circumference * 0.5 - (percent / 100) * (circumference * 0.5);
-
             return (
                 <div className={`relative ${className}`}>
                     <svg width="100%" height="100%" viewBox="0 0 100 100" style={{ transform: 'rotate(180deg)' }}>
@@ -207,18 +197,13 @@
             );
         }
 
-        // Animated EKG Wave SVG Component for empty states
         function EKGSpline() {
             return (
                 <svg className="w-full h-16 opacity-20" viewBox="0 0 500 100" preserveAspectRatio="none">
                     <polyline
-                        fill="none"
-                        stroke="#06b6d4"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeDasharray="1000"
-                        className="animate-ekg"
+                        fill="none" stroke="#06b6d4" strokeWidth="3"
+                        strokeLinecap="round" strokeLinejoin="round"
+                        strokeDasharray="1000" className="animate-ekg"
                         points="0,50 50,50 70,20 90,80 110,10 130,90 150,50 500,50"
                     />
                 </svg>
@@ -231,10 +216,15 @@
             const [status, setStatus] = React.useState(STATUS.IDLE);
             const [errorMsg, setErrorMsg] = React.useState('');
             const [result, setResult] = React.useState(null);
-            const [currentTime, setCurrentTime] = React.useState(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+            const [currentTime, setCurrentTime] = React.useState(
+                new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            );
+            const [copied, setCopied] = React.useState(false);
 
             React.useEffect(() => {
-                const timer = setInterval(() => setCurrentTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })), 60000);
+                const timer = setInterval(() =>
+                    setCurrentTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })),
+                    60000);
                 return () => clearInterval(timer);
             }, []);
 
@@ -245,9 +235,8 @@
 
             const handleDrop = (e) => {
                 e.preventDefault();
-                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                if (e.dataTransfer.files && e.dataTransfer.files.length > 0)
                     processSelection(e.dataTransfer.files[0]);
-                }
             };
 
             const processSelection = (selectedFile) => {
@@ -264,25 +253,17 @@
 
             const analyzeImage = async () => {
                 if (!file) return;
-
                 setStatus(STATUS.ANALYZING);
                 setErrorMsg('');
-
                 const formData = new FormData();
                 formData.append('file', file);
-
                 try {
-                    // Start analysis timeline
                     const analyzeStart = Date.now();
                     const response = await fetch('/predict', { method: 'POST', body: formData });
-
                     if (!response.ok) throw new Error(`API Error: ${response.status}`);
                     const data = await response.json();
-
-                    // Enforce minimum 1.5s delay to let the user see the gorgeous scanning animation
-                    const timeElapsed = Date.now() - analyzeStart;
-                    if (timeElapsed < 1500) await new Promise(r => setTimeout(r, 1500 - timeElapsed));
-
+                    const elapsed = Date.now() - analyzeStart;
+                    if (elapsed < 1500) await new Promise(r => setTimeout(r, 1500 - elapsed));
                     setResult(data);
                     setStatus(STATUS.SUCCESS);
                 } catch (err) {
@@ -298,55 +279,81 @@
                 setStatus(STATUS.IDLE);
                 setResult(null);
                 setErrorMsg('');
+                setCopied(false);
+            };
+
+            const copyResult = () => {
+                if (result && diagnosis) {
+                    const text = `SKIN LESION ANALYSIS REPORT\n${'='.repeat(30)}\nCondition: ${diagnosis.name}\nClassification: ${diagnosis.classification}\nAI Confidence: ${confidencePercent}%\nDanger Level: ${diagnosis.severity} Risk\nNotes: ${diagnosis.desc}\nGenerated: ${new Date().toLocaleString()}`;
+                    navigator.clipboard.writeText(text);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                }
             };
 
             const confidencePercent = result ? Math.round(result.confidence * 100) : 0;
             const diagnosis = result ? CLASS_META[result.prediction] : null;
 
+            // Confidence band
+            const confidenceBand = confidencePercent >= 80
+                ? { label: '✓ High Confidence', color: 'text-dashboard-green' }
+                : confidencePercent >= 60
+                    ? { label: '⚠ Moderate — consider review', color: 'text-amber-400' }
+                    : { label: '✗ Low — manual review recommended', color: 'text-red-400' };
+
+            const gaugeColor = confidencePercent >= 80 ? '#10b981' : confidencePercent >= 60 ? '#f59e0b' : '#ef4444';
+
             return (
                 <div className="min-h-screen bg-dashboard-bg p-4 sm:p-6 lg:p-8 flex items-center justify-center relative overflow-hidden">
 
-                    {/* Smoky Blue Atmospheric Glow */}
+                    {/* Atmospheric glow */}
                     <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-blue-600/15 blur-[120px] pointer-events-none"></div>
                     <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-sky-600/10 blur-[120px] pointer-events-none"></div>
 
                     <div className="max-w-7xl w-full mx-auto flex flex-col gap-6 relative z-10">
 
-                        {/* Header */}
+                        {/* ── Header ── */}
                         <header className="flex items-center justify-between w-full">
-                            <div className="flex-1 max-w-md bg-dashboard-card rounded-full px-5 py-3 flex items-center text-dashboard-textSecondary border border-dashboard-border shadow-sm group hover:border-dashboard-accent/50 transition-colors">
-                                <i className="ph ph-magnifying-glass text-lg mr-3 group-hover:text-dashboard-accent transition-colors"></i>
-                                <span className="text-sm">Search patient IDs or records...</span>
+                            {/* App identity bar */}
+                            <div className="flex-1 max-w-md bg-dashboard-card rounded-full px-5 py-3 flex items-center text-dashboard-textSecondary border border-dashboard-border shadow-sm">
+                                <i className="ph-fill ph-brain text-lg mr-3 text-dashboard-accent"></i>
+                                <span className="text-sm font-medium">Skin Lesion Classifier &bull; ResNet-152 &bull; 7 Classes</span>
                             </div>
 
                             <div className="flex items-center gap-4">
-                                <div className="hidden sm:flex bg-dashboard-card rounded-full p-1.5 border border-dashboard-border">
-                                    <button className="h-10 w-10 rounded-full flex items-center justify-center text-dashboard-textSecondary hover:text-white transition-colors">
-                                        <i className="ph ph-bell text-xl"></i>
-                                    </button>
-                                    <button className="h-10 w-10 rounded-full flex items-center justify-center bg-dashboard-accent text-white shadow-[0_0_15px_rgba(6,182,212,0.5)]">
-                                        <i className="ph ph-squares-four text-xl"></i>
-                                    </button>
-                                    <button className="h-10 w-10 rounded-full flex items-center justify-center text-dashboard-textSecondary hover:text-white transition-colors">
-                                        <i className="ph ph-gear text-xl"></i>
-                                    </button>
+                                {/* New Scan button */}
+                                <button
+                                    onClick={resetDashboard}
+                                    title="New Scan"
+                                    className="flex items-center gap-2 h-10 px-4 rounded-full bg-dashboard-card border border-dashboard-border text-dashboard-textSecondary hover:text-white hover:border-dashboard-accent hover:shadow-[0_0_12px_rgba(6,182,212,0.4)] transition-all text-sm font-medium"
+                                >
+                                    <i className="ph ph-arrow-counter-clockwise text-lg"></i>
+                                    <span className="hidden sm:inline">New Scan</span>
+                                </button>
+
+                                {/* Clock */}
+                                <div className="hidden sm:flex bg-dashboard-card rounded-full px-4 py-2 border border-dashboard-border items-center gap-2">
+                                    <i className="ph ph-clock text-dashboard-textSecondary text-base"></i>
+                                    <span className="text-sm text-dashboard-textSecondary font-medium">{currentTime}</span>
                                 </div>
+
+                                {/* Avatar */}
                                 <div className="h-11 w-11 rounded-full bg-slate-700 overflow-hidden border-2 border-dashboard-border shadow-sm cursor-pointer hover:border-dashboard-accent transition-colors">
                                     <img src="https://api.dicebear.com/9.x/notionists/svg?seed=Felix&backgroundColor=24252b" alt="User" className="h-full w-full object-cover" />
                                 </div>
                             </div>
                         </header>
 
-                        {/* Bento Grid */}
+                        {/* ── Bento Grid ── */}
                         <main className="grid grid-cols-1 md:grid-cols-12 gap-6 auto-rows-min">
 
-                            {/* COLL 1: Hero Action Card */}
+                            {/* COL 1: Hero Action Card */}
                             <div className="md:col-span-12 lg:col-span-4 flex flex-col gap-6">
                                 <div className="glass-hero rounded-[32px] p-8 flex flex-col min-h-[500px] text-white">
                                     <div className="z-10 relative flex-1 flex flex-col">
-                                        <h3 className="text-white/80 font-medium mb-1">Hello Dr. Smith</h3>
+                                        <h3 className="text-white/80 font-medium mb-1">AI Skin Analysis</h3>
                                         <h1 className="text-4xl font-semibold mb-8 tracking-tight text-balance">
-                                            What are you diagnosing today?
+                                            Upload a lesion image to begin
                                         </h1>
 
                                         {!previewUrl ? (
@@ -357,20 +364,19 @@
                                                 onClick={() => document.getElementById('file-upload').click()}
                                             >
                                                 <i className="ph ph-scan text-4xl mb-3 opacity-90 group-hover:scale-110 transition-transform"></i>
-                                                <p className="font-medium">Upload Lesion Scan</p>
-                                                <p className="text-white/60 text-sm mt-1">Drag & Drop Image</p>
+                                                <p className="font-medium">Upload Lesion Image</p>
+                                                <p className="text-white/60 text-sm mt-1">Drag &amp; Drop or Click to Browse</p>
                                                 <input id="file-upload" type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
                                             </div>
                                         ) : (
                                             <div className="flex-1 flex flex-col gap-4">
-                                                {/* Image Preview with Hover Pan/Zoom and Laser line */}
+                                                {/* Image Preview */}
                                                 <div className="w-full h-56 bg-black/30 backdrop-blur-md border border-white/20 rounded-2xl overflow-hidden relative shadow-inner group">
                                                     <img
                                                         src={previewUrl}
                                                         className={`w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110 ${status === STATUS.ANALYZING ? 'opacity-50 grayscale scale-105' : ''}`}
                                                     />
-
-                                                    {/* Animated Laser Sweep */}
+                                                    {/* Laser sweep during analysis */}
                                                     {status === STATUS.ANALYZING && (
                                                         <div className="absolute inset-0 z-10 overflow-hidden pointer-events-none">
                                                             <div className="w-full h-0.5 shadow-[0_0_15px_3px_#10b981] bg-dashboard-green animate-laser"></div>
@@ -382,14 +388,14 @@
                                                 {status === STATUS.IDLE && (
                                                     <button onClick={analyzeImage} className="w-full bg-white text-dashboard-accent font-semibold py-4 rounded-xl flex items-center justify-center shadow-lg hover:shadow-[0_0_20px_rgba(255,255,255,0.4)] hover:scale-[1.02] transition-all">
                                                         <i className="ph-fill ph-stethoscope mr-2 text-xl"></i>
-                                                        Execute ResNet Analysis
+                                                        Analyze Image
                                                     </button>
                                                 )}
 
                                                 {status === STATUS.ANALYZING && (
                                                     <div className="w-full bg-white/10 backdrop-blur-md text-white font-medium py-4 rounded-xl flex items-center justify-center border border-white/20 shadow-[inset_0_0_20px_rgba(255,255,255,0.1)]">
                                                         <i className="ph ph-spinner-gap animate-spin mr-3 text-2xl"></i>
-                                                        Processing Tensor...
+                                                        Analyzing...
                                                     </div>
                                                 )}
 
@@ -409,81 +415,109 @@
                                             </div>
                                         )}
 
-                                        <div className="bg-white/95 text-dashboard-bg rounded-2xl p-4 flex justify-between items-center mt-auto shadow-xl z-20 backdrop-blur-md mt-6">
-                                            <button className="h-10 w-10 flex items-center justify-center hover:bg-dashboard-accent hover:text-white rounded-xl transition-colors"><i className="ph ph-folder-open text-xl"></i></button>
-                                            <button className="h-10 w-10 flex items-center justify-center hover:bg-dashboard-accent hover:text-white rounded-xl transition-colors"><i className="ph ph-camera text-xl"></i></button>
-                                            <button className="h-10 w-10 flex items-center justify-center hover:bg-dashboard-accent hover:text-white rounded-xl transition-colors"><i className="ph ph-microphone text-xl"></i></button>
-                                            <button className="h-10 w-10 flex items-center justify-center hover:bg-dashboard-accent hover:text-white rounded-xl transition-colors"><i className="ph ph-calendar text-xl"></i></button>
+                                        {/* Bottom toolbar — useful actions */}
+                                        <div className="bg-white/95 text-dashboard-bg rounded-2xl p-3 flex justify-between items-center mt-6 shadow-xl z-20">
+                                            {/* Re-upload */}
+                                            <button
+                                                onClick={() => document.getElementById('file-upload').click()}
+                                                title="Upload a different image"
+                                                className="h-10 w-10 flex items-center justify-center hover:bg-dashboard-accent hover:text-white rounded-xl transition-colors"
+                                            >
+                                                <i className="ph ph-upload-simple text-xl"></i>
+                                            </button>
+
+                                            {/* File name */}
+                                            <div className="text-xs text-center text-dashboard-bg/60 font-medium px-2 truncate max-w-[120px]" title={file ? file.name : ''}>
+                                                {file ? file.name : 'No file selected'}
+                                            </div>
+
+                                            {/* Copy result */}
+                                            <button
+                                                onClick={copyResult}
+                                                title="Copy result to clipboard"
+                                                className={`h-10 w-10 flex items-center justify-center rounded-xl transition-colors ${copied ? 'bg-dashboard-green text-white' : 'hover:bg-dashboard-accent hover:text-white'}`}
+                                            >
+                                                <i className={`ph ${copied ? 'ph-check' : 'ph-copy'} text-xl`}></i>
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* COLL 2: Core Metrics */}
+                            {/* COL 2: Verdict + Confidence */}
                             <div className="md:col-span-6 lg:col-span-4 flex flex-col gap-6">
 
-                                {/* Status Widget */}
+                                {/* ── Verdict Card (replaces Session Status) ── */}
                                 <div className="bg-dashboard-card rounded-[28px] p-6 border border-dashboard-border shadow-md transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_15px_30px_-10px_rgba(6,182,212,0.3)] hover:border-dashboard-accent/30 group">
                                     <div className="flex justify-between items-center mb-6">
-                                        <h3 className="text-lg font-medium transition-colors group-hover:text-dashboard-accent">Session Status</h3>
+                                        <h3 className="text-lg font-medium transition-colors group-hover:text-dashboard-accent">Analysis Status</h3>
                                         <i className="ph ph-activity text-dashboard-textSecondary text-xl"></i>
                                     </div>
-                                    <div className="flex justify-between items-center px-2">
-                                        <div className="flex flex-col items-center">
-                                            <div className="relative mb-2">
-                                                <div className="w-12 h-12 rounded-full border-2 border-dashboard-border flex items-center justify-center bg-dashboard-bg">
-                                                    <i className="ph-fill ph-cpu text-dashboard-textSecondary text-xl"></i>
-                                                </div>
-                                                <div className="absolute top-0 right-0 w-3 h-3 bg-dashboard-accent rounded-full border-2 border-dashboard-card shadow-[0_0_8px_#06b6d4]"></div>
+
+                                    {/* Big verdict badge */}
+                                    {status === STATUS.SUCCESS && diagnosis ? (
+                                        <div className={`rounded-2xl p-5 flex flex-col items-center justify-center gap-2 text-center stagger-1 ${diagnosis.classification === 'Cancer' ? 'bg-red-500/10 border border-red-500/40' : 'bg-dashboard-green/10 border border-dashboard-green/40'}`}>
+                                            <i className={`text-5xl ${diagnosis.classification === 'Cancer' ? 'ph-fill ph-warning-circle text-red-400' : 'ph-fill ph-check-circle text-dashboard-green'}`}></i>
+                                            <p className={`text-2xl font-bold tracking-wide ${diagnosis.classification === 'Cancer' ? 'text-red-400' : 'text-dashboard-green'}`}>
+                                                {diagnosis.classification === 'Cancer' ? 'CANCER DETECTED' : 'NON-CANCEROUS'}
+                                            </p>
+                                            <p className="text-sm text-dashboard-textSecondary">{diagnosis.name} ({result.prediction}) &bull; AI is {confidencePercent}% sure</p>
+                                        </div>
+                                    ) : status === STATUS.ANALYZING ? (
+                                        <div className="rounded-2xl p-5 flex flex-col items-center justify-center gap-2 border border-dashboard-accent/30 bg-dashboard-accent/5">
+                                            <i className="ph ph-spinner-gap animate-spin text-4xl text-dashboard-accent"></i>
+                                            <p className="text-sm text-dashboard-textSecondary font-medium">Running AI analysis...</p>
+                                        </div>
+                                    ) : (
+                                        <div className="rounded-2xl p-5 flex flex-col items-center justify-center gap-3 border-2 border-dashed border-dashboard-border">
+                                            <i className="ph ph-scan text-4xl text-dashboard-textSecondary"></i>
+                                            <div className="text-center">
+                                                <p className="text-sm font-medium text-dashboard-textSecondary">No result yet</p>
+                                                <p className="text-xs text-dashboard-textSecondary/60 mt-0.5">Upload an image to begin</p>
                                             </div>
-                                            <p className="text-xs text-dashboard-textSecondary font-medium">Model</p>
                                         </div>
+                                    )}
 
-                                        <div className="flex-1 border-t-2 border-dashed border-dashboard-border mx-4 mt-[-20px] relative">
-                                            {status === STATUS.ANALYZING && <div className="absolute top-[-5px] left-0 h-2 w-2 rounded-full bg-dashboard-accent animate-[ping_1s_infinite] shadow-[0_0_10px_#06b6d4]"></div>}
-                                            {status === STATUS.SUCCESS && <div className="absolute top-[-5px] right-0 h-2 w-2 rounded-full bg-dashboard-green shadow-[0_0_10px_#10b981]"></div>}
-                                        </div>
-
-                                        <div className="flex flex-col items-center">
-                                            <div className="relative mb-2">
-                                                <div className={`w-12 h-12 rounded-full border-2 transition-colors duration-700 flex items-center justify-center ${status === STATUS.SUCCESS ? 'bg-dashboard-green/10 border-dashboard-green/50 shadow-[0_0_15px_rgba(16,185,129,0.3)]' : 'bg-dashboard-bg border-dashboard-border'}`}>
-                                                    <i className={`ph-fill ph-check-circle text-xl transition-colors duration-700 ${status === STATUS.SUCCESS ? 'text-dashboard-green' : 'text-dashboard-textSecondary'}`}></i>
-                                                </div>
-                                            </div>
-                                            <p className="text-xs text-dashboard-textSecondary font-medium">Result</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-8 flex justify-between px-2 text-sm">
+                                    <div className="mt-5 flex justify-between px-1 text-sm">
                                         <div>
-                                            <p className="font-semibold text-dashboard-textPrimary">{currentTime}</p>
-                                            <p className="text-xs text-dashboard-textSecondary mt-0.5">Last Sync</p>
+                                            <p className="font-semibold text-dashboard-textPrimary">
+                                                {status === STATUS.SUCCESS ? 'Complete' : status === STATUS.ANALYZING ? 'In Progress' : 'Ready'}
+                                            </p>
+                                            <p className="text-xs text-dashboard-textSecondary mt-0.5">Status</p>
                                         </div>
                                         <div>
-                                            <p className="font-semibold tracking-wider text-dashboard-textPrimary">RN-152</p>
-                                            <p className="text-xs text-dashboard-textSecondary mt-0.5 text-right">Architecture</p>
+                                            <p className="font-semibold tracking-wider text-dashboard-textPrimary">ResNet-152</p>
+                                            <p className="text-xs text-dashboard-textSecondary mt-0.5 text-right">AI Model</p>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Confidence Gauge Widget */}
+                                {/* ── AI Confidence Gauge ── */}
                                 <div className="bg-dashboard-card rounded-[28px] p-6 border border-dashboard-border shadow-md transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_15px_30px_-10px_rgba(6,182,212,0.3)] hover:border-dashboard-accent/50 group flex-1 flex flex-col relative overflow-hidden">
-                                    {/* Animated Holographic Glow Behind Text */}
                                     <div className={`absolute bottom-[-50px] left-1/2 -translate-x-1/2 w-72 h-48 rounded-full blur-[60px] pointer-events-none transition-all duration-1000 ${status === STATUS.SUCCESS ? 'bg-dashboard-accent/30 animate-glowPulse' : 'bg-blue-500/5'}`}></div>
 
-                                    <h3 className="text-lg font-medium mb-8 transition-colors group-hover:text-dashboard-accent relative z-10">Certainty Score</h3>
+                                    <h3 className="text-lg font-medium mb-2 transition-colors group-hover:text-dashboard-accent relative z-10">AI Confidence</h3>
+                                    <p className="text-xs text-dashboard-textSecondary mb-6 relative z-10">How sure the AI is in its prediction</p>
 
-                                    <div className="relative flex-1 flex flex-col items-center justify-end pb-4 pt-10">
-                                        <CircularProgress percent={confidencePercent} className="w-56 h-28 absolute bottom-4 z-10" />
+                                    <div className="relative flex-1 flex flex-col items-center justify-end pb-4 pt-8">
+                                        <CircularProgress
+                                            percent={confidencePercent}
+                                            bg={gaugeColor}
+                                            className="w-56 h-28 absolute bottom-4 z-10"
+                                        />
 
                                         <div className="text-center z-20 relative mt-4">
                                             <i className="ph-fill ph-target text-3xl mb-1 text-dashboard-textPrimary"></i>
                                             <h2 className="text-5xl font-bold tracking-tight mb-1 text-white">
                                                 {status === STATUS.SUCCESS ? confidencePercent : '- -'}
-                                                <span className="text-2xl text-dashboard-textSecondary font-normal">/100</span>
+                                                <span className="text-2xl text-dashboard-textSecondary font-normal">%</span>
                                             </h2>
-                                            <p className="text-sm text-dashboard-textSecondary">
-                                                {status === STATUS.ANALYZING ? 'Calculating...' : 'Model Confidence'}
+                                            <p className={`text-sm font-semibold ${status === STATUS.SUCCESS ? confidenceBand.color : 'text-dashboard-textSecondary'}`}>
+                                                {status === STATUS.ANALYZING
+                                                    ? 'Calculating...'
+                                                    : status === STATUS.SUCCESS
+                                                        ? confidenceBand.label
+                                                        : 'How sure the AI is'}
                                             </p>
                                         </div>
                                     </div>
@@ -491,49 +525,66 @@
 
                             </div>
 
-                            {/* COLL 3: Detailed Report & Diagnosis */}
+                            {/* COL 3: Detailed Results & What This Means */}
                             <div className="md:col-span-6 lg:col-span-4 flex flex-col gap-6 relative">
 
-                                {/* Diagnostic Body Card */}
+                                {/* ── Detailed Results Card ── */}
                                 <div className="bg-dashboard-card rounded-[28px] p-6 border border-dashboard-border shadow-md transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_15px_30px_-10px_rgba(6,182,212,0.3)] hover:border-dashboard-accent/50 group relative overflow-hidden">
                                     <div className="relative z-10">
                                         <div className="flex justify-between items-center mb-6">
-                                            <h3 className="text-lg font-medium transition-colors group-hover:text-dashboard-accent">Diagnostic Report</h3>
-                                            <button className="p-1.5 bg-dashboard-bg rounded-lg text-dashboard-textSecondary hover:text-white border border-dashboard-border transition-colors hover:border-dashboard-accent">
+                                            <h3 className="text-lg font-medium transition-colors group-hover:text-dashboard-accent">Detailed Results</h3>
+                                            {/* Export button — actually exports */}
+                                            <button
+                                                title="Export report as text file"
+                                                onClick={() => {
+                                                    if (result && diagnosis) {
+                                                        const text = `SKIN LESION ANALYSIS REPORT\n${'='.repeat(30)}\nCondition: ${diagnosis.name}\nClassification: ${diagnosis.classification}\nAI Confidence: ${confidencePercent}%\nDanger Level: ${diagnosis.severity} Risk\nNotes: ${diagnosis.desc}\nGenerated: ${new Date().toLocaleString()}`;
+                                                        const blob = new Blob([text], { type: 'text/plain' });
+                                                        const a = document.createElement('a');
+                                                        a.href = URL.createObjectURL(blob);
+                                                        a.download = 'lesion-report.txt';
+                                                        a.click();
+                                                    }
+                                                }}
+                                                className="p-1.5 bg-dashboard-bg rounded-lg text-dashboard-textSecondary hover:text-white border border-dashboard-border transition-colors hover:border-dashboard-accent"
+                                            >
                                                 <i className="ph ph-export text-lg"></i>
                                             </button>
                                         </div>
 
                                         {status === STATUS.SUCCESS && diagnosis ? (
                                             <div className="space-y-4">
+                                                {/* Detected condition */}
                                                 <div className="bg-dashboard-bg border border-dashboard-border rounded-2xl p-4 flex items-center justify-between shadow-inner stagger-1">
                                                     <div className="flex items-center gap-3">
                                                         <div className={`w-10 h-10 rounded-xl ${diagnosis.statColor} bg-opacity-20 flex items-center justify-center shadow-inner`}>
                                                             <i className={`ph-fill ph-dna ${diagnosis.color} text-xl`}></i>
                                                         </div>
                                                         <div>
-                                                            <p className="text-xs text-dashboard-textSecondary mb-0.5 uppercase tracking-wider font-semibold">Primary Output</p>
+                                                            <p className="text-xs text-dashboard-textSecondary mb-0.5 uppercase tracking-wider font-semibold">Detected Condition</p>
                                                             <p className="font-semibold text-white">{diagnosis.name}</p>
                                                         </div>
                                                     </div>
                                                     <span className={`text-sm font-bold bg-dashboard-card px-3 py-1 rounded-full border border-dashboard-border ${diagnosis.color}`}>{confidencePercent}%</span>
                                                 </div>
 
+                                                {/* Danger level */}
                                                 <div className="flex justify-between items-center px-4 py-3 border border-dashboard-border bg-dashboard-bg/50 rounded-xl stagger-2">
                                                     <div className="flex items-center gap-2 text-sm text-dashboard-textSecondary">
                                                         <i className="ph ph-warning-octagon text-lg"></i>
-                                                        <span>Risk Severity</span>
+                                                        <span>Danger Level</span>
                                                     </div>
-                                                    <span className={`font-semibold text-sm ${diagnosis.color}`}>{diagnosis.severity}</span>
+                                                    <span className={`font-semibold text-sm ${diagnosis.color}`}>{diagnosis.severity} Risk</span>
                                                 </div>
 
+                                                {/* Category */}
                                                 <div className="flex justify-between items-center px-4 py-3 border border-dashboard-border bg-dashboard-bg/50 rounded-xl stagger-3">
                                                     <div className="flex items-center gap-2 text-sm text-dashboard-textSecondary">
-                                                        <i className="ph ph-hash text-lg"></i>
-                                                        <span>Label Code</span>
+                                                        <i className="ph ph-tag text-lg"></i>
+                                                        <span>Category</span>
                                                     </div>
-                                                    <span className="font-medium text-sm px-2 py-1 bg-[#1a1b1e] border border-dashboard-border rounded-md text-white shadow-sm uppercase">
-                                                        {result.prediction}
+                                                    <span className={`font-semibold text-xs px-3 py-1.5 border rounded-lg uppercase tracking-widest ${diagnosis.classTag}`}>
+                                                        {diagnosis.classification}
                                                     </span>
                                                 </div>
                                             </div>
@@ -544,23 +595,21 @@
                                                 <div className="skeleton h-12 w-full rounded-xl"></div>
                                             </div>
                                         ) : (
-                                            /* Empty state with data stream visual */
                                             <div className="h-44 border-2 border-dashed border-dashboard-border rounded-xl flex items-center justify-center text-dashboard-textSecondary text-sm relative overflow-hidden group-hover:border-dashboard-accent/30 transition-colors">
                                                 <div className="absolute inset-0 grid-pattern opacity-50"></div>
                                                 <div className="relative z-10 flex flex-col items-center">
                                                     <EKGSpline />
-                                                    <p className="mt-2 text-xs uppercase tracking-widest opacity-60">Awaiting Signal</p>
+                                                    <p className="mt-2 text-xs uppercase tracking-widest opacity-60">Upload an image to see results</p>
                                                 </div>
                                             </div>
                                         )}
                                     </div>
                                 </div>
 
-                                {/* Clinical Context Card */}
+                                {/* ── What This Means Card ── */}
                                 <div className="bg-dashboard-card rounded-[28px] p-6 border border-dashboard-border shadow-md transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_15px_30px_-10px_rgba(6,182,212,0.3)] hover:border-dashboard-accent/50 group flex-1 flex flex-col overflow-hidden relative">
-                                    <h3 className="text-lg font-medium mb-6 transition-colors group-hover:text-dashboard-accent relative z-10">Clinical Intelligence</h3>
+                                    <h3 className="text-lg font-medium mb-6 transition-colors group-hover:text-dashboard-accent relative z-10">What This Means</h3>
 
-                                    {/* Data grid background showing when in success mode */}
                                     {status === STATUS.SUCCESS && <div className="absolute inset-0 grid-pattern opacity-20 pointer-events-none"></div>}
 
                                     <div className="flex-1 flex flex-col justify-center gap-6 relative z-10">
@@ -572,7 +621,6 @@
                                                 <p className="text-dashboard-textSecondary text-sm leading-relaxed mb-6 font-medium">
                                                     {diagnosis.desc}
                                                 </p>
-
                                                 <button className={`w-full border font-medium py-3.5 rounded-xl transition-all flex items-center justify-center text-sm shadow-sm ${diagnosis.severity === 'High' ? 'bg-dashboard-accent/10 border-dashboard-accent text-dashboard-accent hover:bg-dashboard-accent hover:text-white' : 'bg-dashboard-bg border-dashboard-border text-white hover:border-dashboard-green hover:text-dashboard-green'}`}>
                                                     {diagnosis.severity === 'High' ? (
                                                         <><i className="ph-fill ph-warning mr-2 text-lg"></i> Priority Medical Review</>
@@ -591,10 +639,10 @@
                                         ) : (
                                             <div className="text-center">
                                                 <div className="w-16 h-16 rounded-2xl bg-dashboard-bg border border-dashboard-border flex items-center justify-center mx-auto mb-4 scale-100 group-hover:scale-110 transition-transform">
-                                                    <i className="ph ph-books text-2xl text-dashboard-textSecondary"></i>
+                                                    <i className="ph ph-info text-2xl text-dashboard-textSecondary"></i>
                                                 </div>
                                                 <p className="text-dashboard-textSecondary text-sm text-balance max-w-xs mx-auto">
-                                                    Clinical definitions and recommended next steps will appear here.
+                                                    A plain-language explanation of the condition and recommended next steps will appear here after analysis.
                                                 </p>
                                             </div>
                                         )}

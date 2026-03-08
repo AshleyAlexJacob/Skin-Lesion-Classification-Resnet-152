@@ -72,4 +72,46 @@ You can easily spin up the environment straight from `uvicorn`:
 .venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 You can access the built-in Interactive Medical UI at `http://localhost:8000/` or visit Swagger at `http://localhost:8000/docs`.
+
+---
+
+# Walkthrough - UI Restoration
+
+After the advanced animation enhancements in a prior session, certain UI elements were reverted at the user's request to restore a preferred previous state.
+
+## Changes Reverted in `app/templates/index.html`
+
+- **Header Icons**: Restored the original Bell, Squares-four, and Gear icons in the top-right header.
+- **Image Action Buttons**: Reverted the four icon buttons below the upload area back to Folder, Camera, Microphone, and Calendar icons.
+- **Status Metric**: Restored the "Last Sync" label in the session status widget.
+- **Empty State Messages**: Restored the original generic "Clinical definitions will appear here" placeholder text.
+
+> [!NOTE]
+> The Cancer/Non-Cancer classification display and verdict badge introduced in earlier sessions were **retained** during this restoration — only the structural/icon changes were rolled back.
+
+---
+
+# Walkthrough - UI Simplification for Clinicians
+
+The interface was refined to be more accessible to clinicians by replacing technical jargon with plain-language labels and adding key usability features.
+
+## Changes Made in `app/templates/index.html`
+
+| Area | Before | After |
+|---|---|---|
+| Metric labels | Technical model terminology | Plain English descriptions |
+| Verdict display | Raw prediction string | Prominent **Cancer / Non-Cancer** badge |
+| Confidence score | Raw percentage only | Percentage + band label (`High` / `Moderate` / `Low`) |
+| Bottom toolbar buttons | Generic (Folder, Camera, Mic, Calendar) | Contextual actions (Copy Results, Image Info, etc.) |
+
+## Verified UI State
+
+![Simplified UI — idle state ready for upload](/home/moeenuddin/.gemini/antigravity/brain/19fa7ca7-b7b1-4f37-9886-b3f0c6680584/ui_simplified.png)
+
+The dashboard now shows:
+- **"Upload a lesion image to begin"** as the hero prompt
+- **"AI Confidence"** with the sub-label *"How sure the AI is in its prediction"*
+- **"What This Means"** panel with a plain-language explanation placeholder
+- **"Analysis Status"** and **"Detailed Results"** widgets replacing raw clinical codes
 /;
+________()

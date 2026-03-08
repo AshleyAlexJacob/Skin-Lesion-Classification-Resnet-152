@@ -4,8 +4,9 @@ import logging
 import pathlib
 
 import torch
-import torchvision.models as models
 from torch import nn
+
+from src.model.resnet import SkinLesionResNet
 
 logger = logging.getLogger(__name__)
 
@@ -18,8 +19,7 @@ def load_model(
 ) -> nn.Module:
     """Load the trained ResNet-152 model.
 
-    Instantiates a ResNet-152 model, modifies the final fully connected
-    layer to match the number of diagnosis classes, and loads the weights
+    Instantiates a ResNet-152 model via SkinLesionResNet and loads the weights
     from the provided state dictionary path.
 
     Args:
@@ -39,12 +39,8 @@ def load_model(
         raise FileNotFoundError(f"Model file not found at {path}")
 
     logger.info("Instantiating ResNet-152 architecture.")
-    # Initialize model without pretrained weights since we will load our own
-    model = models.resnet152(weights=None)
-
-    # Modify the fully connected layer
-    num_ftrs = model.fc.in_features
-    model.fc = nn.Linear(num_ftrs, num_classes)
+    # Initialize the model using your custom class
+    model = SkinLesionResNet(num_classes=num_classes, pretrained=False)
 
     logger.info(f"Loading weights from {path} to device '{device}'")
     try:

@@ -114,3 +114,4 @@ The dashboard now shows:
 - **"What This Means"** panel with a plain-language explanation placeholder
 - **"Analysis Status"** and **"Detailed Results"** widgets replacing raw clinical codes
 /;
+________()
